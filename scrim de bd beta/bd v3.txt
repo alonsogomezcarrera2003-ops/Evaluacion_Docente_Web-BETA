@@ -1,0 +1,198 @@
+-- Script SQL optimizado para phpMyAdmin
+-- Proyecto: Sistema de Evaluación Docente
+-- Versión: 2.1 (Compatible con XAMPP/WAMP/Hosting)
+
+SET FOREIGN_KEY_CHECKS = 0;
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+-- -----------------------------------------------------
+-- Base de datos: evaluacion_docente_db
+-- -----------------------------------------------------
+-- NOTA: Si usas un hosting que no te permite crear bases de datos (solo tablas),
+-- comenta o borra las siguientes 3 líneas y selecciona tu base de datos manualmente antes de importar.
+-- DROP DATABASE IF EXISTS `evaluacion_docente_db`;
+-- CREATE DATABASE IF NOT EXISTS `evaluacion_docente_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+-- USE `evaluacion_docente_db`;
+
+-- -----------------------------------------------------
+-- 1. Tabla Padre: Usuario (Herencia)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Usuario` (
+  `idUsuario` INT(11) NOT NULL AUTO_INCREMENT,
+  `Nombre` VARCHAR(100) NOT NULL,
+  `Apellido` VARCHAR(100) NOT NULL,
+  `Email` VARCHAR(100) NOT NULL UNIQUE,
+  `Contrasena_Hash` VARCHAR(255) NOT NULL COMMENT 'Hash encriptado',
+  
+  `FechaRegistro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idUsuario`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 2. Subtipo: Estudiante
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Estudiante` (
+  `idUsuario` INT(11) NOT NULL,
+  `CodigoEstudiante` VARCHAR(20) NOT NULL UNIQUE,
+  PRIMARY KEY (`idUsuario`),
+  CONSTRAINT `fk_Estudiante_Usuario`
+    FOREIGN KEY (`idUsuario`)
+    REFERENCES `Usuario` (`idUsuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 3. Subtipo: Docente
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Docente` (
+  `idUsuario` INT(11) NOT NULL,
+  `CodigoDocente` VARCHAR(20) NOT NULL UNIQUE,
+  `Clasificacion` VARCHAR(40) NULL,
+  PRIMARY KEY (`idUsuario`),
+  CONSTRAINT `fk_Docente_Usuario`
+    FOREIGN KEY (`idUsuario`)
+    REFERENCES `Usuario` (`idUsuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 4. Subtipo: Administrador
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Administrador` (
+  `idUsuario` INT(11) NOT NULL,
+  `Cargo` VARCHAR(50) NULL,
+  PRIMARY KEY (`idUsuario`),
+  CONSTRAINT `fk_Administrador_Usuario`
+    FOREIGN KEY (`idUsuario`)
+    REFERENCES `Usuario` (`idUsuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 5. Cursos
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Curso` (
+  `idCurso` INT(11) NOT NULL AUTO_INCREMENT,
+  `CodigoCurso` VARCHAR(20) NOT NULL UNIQUE,
+  `NombreCurso` VARCHAR(100) NOT NULL,
+  `EstadoCurso` TINYINT(1) DEFAULT 1,
+  PRIMARY KEY (`idCurso`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 6. Asignación Docente -> Curso
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `AsignacionDocente` (
+  `idAsignacion` INT(11) NOT NULL AUTO_INCREMENT,
+  `Docente_idUsuario` INT(11) NOT NULL,
+  `Curso_idCurso` INT(11) NOT NULL,
+  `Periodo` VARCHAR(10) NOT NULL COMMENT 'Ej: 2025-1',
+  `Grupo` VARCHAR(5) NOT NULL COMMENT 'Ej: A, B, G1',
+  PRIMARY KEY (`idAsignacion`),
+  KEY `idx_docente_curso` (`Docente_idUsuario`, `Curso_idCurso`),
+  CONSTRAINT `fk_Asignacion_Docente`
+    FOREIGN KEY (`Docente_idUsuario`)
+    REFERENCES `Docente` (`idUsuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_Asignacion_Curso`
+    FOREIGN KEY (`Curso_idCurso`)
+    REFERENCES `Curso` (`idCurso`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 7. Matricula (Cabecera)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Matricula` (
+  `idMatricula` INT(11) NOT NULL AUTO_INCREMENT,
+  `Estudiante_idUsuario` INT(11) NOT NULL,
+  `FechaMatricula` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `Periodo` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`idMatricula`),
+  CONSTRAINT `fk_Matricula_Estudiante`
+    FOREIGN KEY (`Estudiante_idUsuario`)
+    REFERENCES `Estudiante` (`idUsuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 8. Detalle Matricula
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `DetalleMatricula` (
+  `idDetalleMatricula` INT(11) NOT NULL AUTO_INCREMENT,
+  `Matricula_idMatricula` INT(11) NOT NULL,
+  `AsignacionDocente_idAsignacion` INT(11) NOT NULL,
+  `Estado` ENUM('ACTIVO', 'RETIRADO') DEFAULT 'ACTIVO',
+  PRIMARY KEY (`idDetalleMatricula`),
+  UNIQUE KEY `unique_matricula_asignacion` (`Matricula_idMatricula`, `AsignacionDocente_idAsignacion`),
+  CONSTRAINT `fk_Detalle_Matricula`
+    FOREIGN KEY (`Matricula_idMatricula`)
+    REFERENCES `Matricula` (`idMatricula`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_Detalle_Asignacion`
+    FOREIGN KEY (`AsignacionDocente_idAsignacion`)
+    REFERENCES `AsignacionDocente` (`idAsignacion`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 9. Definición de la Encuesta (Banco de Preguntas)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Pregunta` (
+  `idPregunta` INT(11) NOT NULL AUTO_INCREMENT,
+  `TextoPregunta` VARCHAR(255) NOT NULL,
+
+  PRIMARY KEY (`idPregunta`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 10. Evaluación (Respuestas de Estudiantes)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Evaluacion` (
+  `idEvaluacion` INT(11) NOT NULL AUTO_INCREMENT,
+  `DetalleMatricula_id` INT(11) NOT NULL,
+  `FechaEvaluacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  
+  PRIMARY KEY (`idEvaluacion`),
+  UNIQUE KEY `unique_evaluacion_detalle` (`DetalleMatricula_id`),
+  CONSTRAINT `fk_Evaluacion_Detalle`
+    FOREIGN KEY (`DetalleMatricula_id`)
+    REFERENCES `DetalleMatricula` (`idDetalleMatricula`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- 11. Respuestas Detalladas
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Respuesta` (
+  `idRespuesta` INT(11) NOT NULL AUTO_INCREMENT,
+  `Evaluacion_idEvaluacion` INT(11) NOT NULL,
+  `Pregunta_idPregunta` INT(11) NOT NULL,
+  `ValorNumerico` INT(11) NULL COMMENT 'Para escalas de 1 a 5',
+  `ValorTexto` TEXT NULL COMMENT 'Para respuestas abiertas',
+  PRIMARY KEY (`idRespuesta`),
+  CONSTRAINT `fk_Respuesta_Evaluacion`
+    FOREIGN KEY (`Evaluacion_idEvaluacion`)
+    REFERENCES `Evaluacion` (`idEvaluacion`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_Respuesta_Pregunta`
+    FOREIGN KEY (`Pregunta_idPregunta`)
+    REFERENCES `Pregunta` (`idPregunta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
+COMMIT;

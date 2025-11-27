@@ -1,0 +1,122 @@
+-- 1. CREACIÓN DE LA BASE DE DATOS
+CREATE DATABASE IF NOT EXISTS evaluacion_docente;
+USE evaluacion_docente;
+
+-- 2. ESTRUCTURA DE TABLAS
+
+-- Tabla de Usuarios (Centraliza Estudiantes, Docentes y Admins)
+-- Se usa DNI como identificador único para relaciones o el ID autoincremental
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    dni VARCHAR(20) NOT NULL UNIQUE,
+    code VARCHAR(20) UNIQUE, -- Código de matrícula (solo estudiantes)
+    name VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL, -- Para estudiantes será su DNI, para otros su clave
+    role ENUM('student', 'professor', 'admin') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Cursos
+-- El ID es VARCHAR para mantener compatibilidad con la lógica actual del frontend (ej: "2025-SGC-2913")
+CREATE TABLE courses (
+    id VARCHAR(50) PRIMARY KEY, 
+    code VARCHAR(20) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    teacher_id INT, -- Relación con la tabla users (role: professor)
+    is_active BOOLEAN DEFAULT TRUE, -- Controla si la encuesta está activa para este curso
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Tabla de Matrículas (Relación Estudiantes <-> Cursos)
+CREATE TABLE enrollments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    course_id VARCHAR(50) NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    UNIQUE(student_id, course_id) -- Un estudiante no puede matricularse doble en el mismo curso
+);
+
+-- Tabla de Periodo de Evaluación (Configuración global)
+CREATE TABLE evaluation_periods (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Tabla de Encuestas (Resultados)
+CREATE TABLE surveys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL, -- Quién respondió
+    course_id VARCHAR(50) NOT NULL, -- Qué curso evaluó
+    p1 TINYINT NOT NULL, -- Pregunta 1 (1-5)
+    p2 TINYINT NOT NULL, -- Pregunta 2 (1-5)
+    p3 TINYINT NOT NULL, -- Pregunta 3 (1-5)
+    p4 TINYINT NOT NULL, -- Pregunta 4 (1-5)
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id),
+    FOREIGN KEY (course_id) REFERENCES courses(id),
+    UNIQUE(student_id, course_id) -- Un estudiante solo puede llenar una encuesta por curso
+);
+
+-- 3. INSERCIÓN DE DATOS (MIGRACIÓN DESDE DATA.JSON)
+
+-- Insertar Administradores
+INSERT INTO users (dni, name, password, role) VALUES 
+('99999999', 'ADMINISTRADOR GENERAL', 'admin123', 'admin');
+
+-- Insertar Docentes
+INSERT INTO users (dni, name, password, role) VALUES 
+('80000001', 'ARTEAGA CORTEZ HUMBERTO URBANO', 'docente01', 'professor'),
+('80000002', 'VILCHEZ INGA CESAR', 'docente02', 'professor'),
+('80000003', 'HUATAY ENRIQUEZ REENATY AMANDA', 'docente03', 'professor'),
+('80000004', 'RAMIREZ VELIZ JUAN FRANCISCO', 'docente04', 'professor');
+
+-- Insertar Estudiantes
+-- Nota: En app.js la lógica valida que el password del estudiante sea su DNI.
+INSERT INTO users (code, name, dni, password, role) VALUES 
+('20250001', 'ACOSTA GARCIA, JHOSUE HERCULES', '70000001', '70000001', 'student'),
+('20250002', 'CARRERA URIBE, SKARLET SHANDEY', '70000002', '70000002', 'student'),
+('20250003', 'GOMEZ CARRERA, JORGE ALONSO', '70000003', '70000003', 'student');
+
+-- Insertar Cursos
+-- Asignamos el teacher_id buscando por el DNI del docente insertado arriba
+INSERT INTO courses (id, code, name, teacher_id, is_active) VALUES 
+('2025-SGC-2913', 'SGC-2913', 'SISTEMA DE GESTION DE CALIDAD', (SELECT id FROM users WHERE dni='80000001'), 1),
+('2025-RYCI-2374', 'RYCI-2374', 'REDES Y COMUNICACIONES I', (SELECT id FROM users WHERE dni='80000002'), 1),
+('2025-GDC-1177', 'GDC-1177', 'GESTION DEL CONOCIMIENTO', (SELECT id FROM users WHERE dni='80000003'), 1),
+('2025-PDSI-2876', 'PDSI-2876', 'PROYECTOS DE SISTEMA DE INFORMACIÓN', (SELECT id FROM users WHERE dni='80000004'), 0); 
+-- Nota: PDSI-2876 está desactivado (0) según data.json
+
+-- Insertar Matrículas (Enrollments)
+-- ACOSTA GARCIA (20250001) lleva: SGC, REDES, PROYECTOS
+INSERT INTO enrollments (student_id, course_id) VALUES 
+((SELECT id FROM users WHERE code='20250001'), '2025-SGC-2913'),
+((SELECT id FROM users WHERE code='20250001'), '2025-RYCI-2374'),
+((SELECT id FROM users WHERE code='20250001'), '2025-PDSI-2876');
+
+-- CARRERA URIBE (20250002) lleva: SGC, REDES, GESTION
+INSERT INTO enrollments (student_id, course_id) VALUES 
+((SELECT id FROM users WHERE code='20250002'), '2025-SGC-2913'),
+((SELECT id FROM users WHERE code='20250002'), '2025-RYCI-2374'),
+((SELECT id FROM users WHERE code='20250002'), '2025-GDC-1177');
+
+-- GOMEZ CARRERA (20250003) lleva: SGC, REDES, GESTION
+INSERT INTO enrollments (student_id, course_id) VALUES 
+((SELECT id FROM users WHERE code='20250003'), '2025-SGC-2913'),
+((SELECT id FROM users WHERE code='20250003'), '2025-RYCI-2374'),
+((SELECT id FROM users WHERE code='20250003'), '2025-GDC-1177');
+
+-- Insertar Periodo de Evaluación
+INSERT INTO evaluation_periods (start_date, end_date, is_active) VALUES 
+('2024-08-01', '2024-12-31', 1);
+
+-- Insertar Encuestas Realizadas (Histórico de data.json)
+INSERT INTO surveys (student_id, course_id, p1, p2, p3, p4, comment) VALUES 
+((SELECT id FROM users WHERE code='20250001'), '2025-SGC-2913', 5, 4, 5, 4, 'Gran claridad al explicar'),
+((SELECT id FROM users WHERE code='20250002'), '2025-SGC-2913', 4, 4, 4, 4, 'Buen manejo del curso'),
+((SELECT id FROM users WHERE code='20250003'), '2025-RYCI-2374', 3, 4, 3, 4, 'Podría mejorar la puntualidad'),
+((SELECT id FROM users WHERE code='20250001'), '2025-RYCI-2374', 4, 3, 4, 3, 'Clases dinámicas'),
+((SELECT id FROM users WHERE code='20250002'), '2025-GDC-1177', 5, 5, 5, 5, 'Excelente guía y dominio');

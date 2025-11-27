@@ -1,0 +1,107 @@
+{
+  "evaluationPeriod": {
+    "startDate": "2024-08-01",
+    "endDate": "2024-12-31",
+    "isActive": true
+  },
+  "students": [
+    {
+      "code": "20250001",
+      "name": "ACOSTA GARCIA, JHOSUE HERCULES",
+      "dni": "70000001",
+      "courses": [
+        { "id": "2025-SGC-2913", "code": "SGC-2913", "name": "SISTEMA DE GESTION DE CALIDAD", "teacher": "ARTEAGA CORTEZ HUMBERTO URBANO", "isSurveyActive": true },
+        { "id": "2025-RYCI-2374", "code": "RYCI-2374", "name": "REDES Y COMUNICACIONES I", "teacher": "VILCHEZ INGA CESAR", "isSurveyActive": true },
+        { "id": "2025-PDSI-2876", "code": "PDSI-2876", "name": "PROYECTOS DE SISTEMA DE INFORMACIÓN", "teacher": "RAMIREZ VELIZ JUAN FRANCISCO", "isSurveyActive": false }
+      ]
+    },
+    {
+      "code": "20250002",
+      "name": "CARRERA URIBE, SKARLET SHANDEY",
+      "dni": "70000002",
+      "courses": [
+        { "id": "2025-SGC-2913", "code": "SGC-2913", "name": "SISTEMA DE GESTION DE CALIDAD", "teacher": "ARTEAGA CORTEZ HUMBERTO URBANO", "isSurveyActive": true },
+        { "id": "2025-RYCI-2374", "code": "RYCI-2374", "name": "REDES Y COMUNICACIONES I", "teacher": "VILCHEZ INGA CESAR", "isSurveyActive": true },
+        { "id": "2025-GDC-1177", "code": "GDC-1177", "name": "GESTION DEL CONOCIMIENTO", "teacher": "HUATAY ENRIQUEZ REENATY AMANDA", "isSurveyActive": true }
+      ]
+    },
+    {
+      "code": "20250003",
+      "name": "GOMEZ CARRERA, JORGE ALONSO",
+      "dni": "70000003",
+      "courses": [
+        { "id": "2025-SGC-2913", "code": "SGC-2913", "name": "SISTEMA DE GESTION DE CALIDAD", "teacher": "ARTEAGA CORTEZ HUMBERTO URBANO", "isSurveyActive": true },
+        { "id": "2025-RYCI-2374", "code": "RYCI-2374", "name": "REDES Y COMUNICACIONES I", "teacher": "VILCHEZ INGA CESAR", "isSurveyActive": true },
+        { "id": "2025-GDC-1177", "code": "GDC-1177", "name": "GESTION DEL CONOCIMIENTO", "teacher": "HUATAY ENRIQUEZ REENATY AMANDA", "isSurveyActive": true }
+      ]
+    }
+  ],
+  "professors": [
+    {
+      "dni": "80000001",
+      "name": "ARTEAGA CORTEZ HUMBERTO URBANO",
+      "password": "docente01",
+      "courses": [
+        { "id": "2025-SGC-2913", "code": "SGC-2913", "name": "SISTEMA DE GESTION DE CALIDAD", "isSurveyActive": true }
+      ]
+    },
+    {
+      "dni": "80000002",
+      "name": "VILCHEZ INGA CESAR",
+      "password": "docente02",
+      "courses": [
+        { "id": "2025-RYCI-2374", "code": "RYCI-2374", "name": "REDES Y COMUNICACIONES I", "isSurveyActive": true }
+      ]
+    },
+    {
+      "dni": "80000003",
+      "name": "HUATAY ENRIQUEZ REENATY AMANDA",
+      "password": "docente03",
+      "courses": [
+        { "id": "2025-GDC-1177", "code": "GDC-1177", "name": "GESTION DEL CONOCIMIENTO", "isSurveyActive": true } 
+      ]
+    },
+    {
+      "dni": "80000004",
+      "name": "RAMIREZ VELIZ JUAN FRANCISCO",
+      "password": "docente04",
+      "courses": [
+        { "id": "2025-PDSI-2876", "code": "PDSI-2876", "name": "PROYECTOS DE SISTEMA DE INFORMACIÓN", "isSurveyActive": false }
+      ]
+    }
+  ],
+  "admins": [
+    {
+      "dni": "99999999",
+      "name": "ADMINISTRADOR GENERAL",
+      "password": "admin123"
+    }
+  ],
+  "surveys": [
+    {
+      "student": "20250001",
+      "courseId": "2025-SGC-2913",
+      "answers": { "p1": 5, "p2": 4, "p3": 5, "p4": 4, "comment": "Gran claridad al explicar" }
+    },
+    {
+      "student": "20250002",
+      "courseId": "2025-SGC-2913",
+      "answers": { "p1": 4, "p2": 4, "p3": 4, "p4": 4, "comment": "Buen manejo del curso" }
+    },
+    {
+      "student": "20250003",
+      "courseId": "2025-RYCI-2374",
+      "answers": { "p1": 3, "p2": 4, "p3": 3, "p4": 4, "comment": "Podría mejorar la puntualidad" }
+    },
+    {
+      "student": "20250001",
+      "courseId": "2025-RYCI-2374",
+      "answers": { "p1": 4, "p2": 3, "p3": 4, "p4": 3, "comment": "Clases dinámicas" }
+    },
+    {
+      "student": "20250002",
+      "courseId": "2025-GDC-1177",
+      "answers": { "p1": 5, "p2": 5, "p3": 5, "p4": 5, "comment": "Excelente guía y dominio" }
+    }
+  ]
+}

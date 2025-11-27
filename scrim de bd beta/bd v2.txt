@@ -1,0 +1,119 @@
+-- 1. CREACIÓN DE LA BASE DE DATOS
+-- CREATE DATABASE IF NOT EXISTS evaluacion_docente;
+-- USE evaluacion_docente;
+
+-- 2. ESTRUCTURA DE TABLAS (EN ESPAÑOL)
+
+-- Tabla: usuarios (Antes 'users')
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    dni VARCHAR(20) NOT NULL UNIQUE,
+    codigo VARCHAR(20) UNIQUE, -- Antes 'code'
+    nombre VARCHAR(100) NOT NULL, -- Antes 'name'
+    contrasena VARCHAR(100) NOT NULL, -- Antes 'password'
+    -- Mantenemos los valores en inglés para compatibilidad con el código React/Node
+    rol ENUM('student', 'professor', 'admin') NOT NULL, 
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: cursos (Antes 'courses')
+CREATE TABLE cursos (
+    id VARCHAR(50) PRIMARY KEY, -- Mantenemos ID tipo string (ej: "2025-SGC-2913")
+    codigo VARCHAR(20) NOT NULL, -- Código visible del curso
+    nombre VARCHAR(100) NOT NULL,
+    docente_id INT, -- Relación con la tabla usuarios
+    esta_activo BOOLEAN DEFAULT TRUE, -- Antes 'is_active'
+    FOREIGN KEY (docente_id) REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+-- Tabla: matriculas (Antes 'enrollments')
+-- Tabla intermedia para la relación Muchos-a-Muchos entre Estudiantes y Cursos
+CREATE TABLE matriculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    estudiante_id INT NOT NULL,
+    curso_id VARCHAR(50) NOT NULL,
+    FOREIGN KEY (estudiante_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE,
+    UNIQUE(estudiante_id, curso_id) -- Evita duplicados
+);
+
+-- Tabla: periodos_evaluacion (Antes 'evaluation_periods')
+CREATE TABLE periodos_evaluacion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_inicio DATE NOT NULL, -- Antes 'start_date'
+    fecha_fin DATE NOT NULL,    -- Antes 'end_date'
+    esta_activo BOOLEAN DEFAULT TRUE
+);
+
+-- Tabla: encuestas (Antes 'surveys')
+CREATE TABLE encuestas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    estudiante_id INT NOT NULL,
+    curso_id VARCHAR(50) NOT NULL,
+    p1 TINYINT NOT NULL, -- Pregunta 1
+    p2 TINYINT NOT NULL, -- Pregunta 2
+    p3 TINYINT NOT NULL, -- Pregunta 3
+    p4 TINYINT NOT NULL, -- Pregunta 4
+    comentario TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (estudiante_id) REFERENCES usuarios(id),
+    FOREIGN KEY (curso_id) REFERENCES cursos(id),
+    UNIQUE(estudiante_id, curso_id) -- Un estudiante solo responde una vez por curso
+);
+
+-- 3. INSERCIÓN DE DATOS (ADAPTADO A NOMBRES EN ESPAÑOL)
+
+-- Insertar Administradores
+INSERT INTO usuarios (dni, nombre, contrasena, rol) VALUES 
+('99999999', 'ADMINISTRADOR GENERAL', 'admin123', 'admin');
+
+-- Insertar Docentes
+INSERT INTO usuarios (dni, nombre, contrasena, rol) VALUES 
+('80000001', 'ARTEAGA CORTEZ HUMBERTO URBANO', 'docente01', 'professor'),
+('80000002', 'VILCHEZ INGA CESAR', 'docente02', 'professor'),
+('80000003', 'HUATAY ENRIQUEZ REENATY AMANDA', 'docente03', 'professor'),
+('80000004', 'RAMIREZ VELIZ JUAN FRANCISCO', 'docente04', 'professor');
+
+-- Insertar Estudiantes
+INSERT INTO usuarios (codigo, nombre, dni, contrasena, rol) VALUES 
+('20250001', 'ACOSTA GARCIA, JHOSUE HERCULES', '70000001', '70000001', 'student'),
+('20250002', 'CARRERA URIBE, SKARLET SHANDEY', '70000002', '70000002', 'student'),
+('20250003', 'GOMEZ CARRERA, JORGE ALONSO', '70000003', '70000003', 'student');
+
+-- Insertar Cursos
+INSERT INTO cursos (id, codigo, nombre, docente_id, esta_activo) VALUES 
+('2025-SGC-2913', 'SGC-2913', 'SISTEMA DE GESTION DE CALIDAD', (SELECT id FROM usuarios WHERE dni='80000001'), 1),
+('2025-RYCI-2374', 'RYCI-2374', 'REDES Y COMUNICACIONES I', (SELECT id FROM usuarios WHERE dni='80000002'), 1),
+('2025-GDC-1177', 'GDC-1177', 'GESTION DEL CONOCIMIENTO', (SELECT id FROM usuarios WHERE dni='80000003'), 1),
+('2025-PDSI-2876', 'PDSI-2876', 'PROYECTOS DE SISTEMA DE INFORMACIÓN', (SELECT id FROM usuarios WHERE dni='80000004'), 0);
+
+-- Insertar Matriculas
+-- ACOSTA GARCIA (20250001)
+INSERT INTO matriculas (estudiante_id, curso_id) VALUES 
+((SELECT id FROM usuarios WHERE codigo='20250001'), '2025-SGC-2913'),
+((SELECT id FROM usuarios WHERE codigo='20250001'), '2025-RYCI-2374'),
+((SELECT id FROM usuarios WHERE codigo='20250001'), '2025-PDSI-2876');
+
+-- CARRERA URIBE (20250002)
+INSERT INTO matriculas (estudiante_id, curso_id) VALUES 
+((SELECT id FROM usuarios WHERE codigo='20250002'), '2025-SGC-2913'),
+((SELECT id FROM usuarios WHERE codigo='20250002'), '2025-RYCI-2374'),
+((SELECT id FROM usuarios WHERE codigo='20250002'), '2025-GDC-1177');
+
+-- GOMEZ CARRERA (20250003)
+INSERT INTO matriculas (estudiante_id, curso_id) VALUES 
+((SELECT id FROM usuarios WHERE codigo='20250003'), '2025-SGC-2913'),
+((SELECT id FROM usuarios WHERE codigo='20250003'), '2025-RYCI-2374'),
+((SELECT id FROM usuarios WHERE codigo='20250003'), '2025-GDC-1177');
+
+-- Insertar Periodo de Evaluación
+INSERT INTO periodos_evaluacion (fecha_inicio, fecha_fin, esta_activo) VALUES 
+('2024-08-01', '2024-12-31', 1);
+
+-- Insertar Encuestas (Histórico)
+INSERT INTO encuestas (estudiante_id, curso_id, p1, p2, p3, p4, comentario) VALUES 
+((SELECT id FROM usuarios WHERE codigo='20250001'), '2025-SGC-2913', 5, 4, 5, 4, 'Gran claridad al explicar'),
+((SELECT id FROM usuarios WHERE codigo='20250002'), '2025-SGC-2913', 4, 4, 4, 4, 'Buen manejo del curso'),
+((SELECT id FROM usuarios WHERE codigo='20250003'), '2025-RYCI-2374', 3, 4, 3, 4, 'Podría mejorar la puntualidad'),
+((SELECT id FROM usuarios WHERE codigo='20250001'), '2025-RYCI-2374', 4, 3, 4, 3, 'Clases dinámicas'),
+((SELECT id FROM usuarios WHERE codigo='20250002'), '2025-GDC-1177', 5, 5, 5, 5, 'Excelente guía y dominio');
