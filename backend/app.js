@@ -12,7 +12,7 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 
 // Cargar datos iniciales (simulando la base de datos)
 let data = JSON.parse(fs.readFileSync(DATA_FILE));
-
+// Esto es una prueba gaaa
 // Permite refrescar los datos cuando el archivo JSON se actualiza manualmente
 const reloadData = () => {
   try {
